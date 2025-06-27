@@ -7,13 +7,32 @@ import {
   FaTasks,
   FaCloudUploadAlt,
 } from "react-icons/fa";
+import * as XLSX from "xlsx";
 
 export default function HomePage() {
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files[0];
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      console.log("File selected:", file.name, file.size, file.type);
 
-    if (!file) return;
-  }
+      const reader = new FileReader();
+
+      reader.onload = (e) => {
+        console.log(
+          "File content (first 100 chars):",
+          e.target?.result as string
+        );
+      };
+
+      reader.onerror = (e) => {
+        console.error("FileReader error:", reader.error);
+      };
+
+      reader.readAsArrayBuffer(file);
+    } else {
+      console.log("No file selected.");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-violet-100 to-blue-50 flex flex-col items-center justify-center py-8">
