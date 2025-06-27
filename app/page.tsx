@@ -18,10 +18,17 @@ export default function HomePage() {
       const reader = new FileReader();
 
       reader.onload = (e) => {
-        console.log(
-          "File content (first 100 chars):",
-          e.target?.result as string
-        );
+        const workbook = XLSX.read(e.target?.result as ArrayBuffer, {
+          type: "array",
+        }); // returns a workbook obj
+
+        const sheetName = workbook.SheetNames[0];
+
+        const worksheet = workbook.Sheets[sheetName];
+
+        const json = XLSX.utils.sheet_to_json(worksheet);
+
+        console.log(json);
       };
 
       reader.onerror = (e) => {
