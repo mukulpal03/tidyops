@@ -1,5 +1,7 @@
 "use client";
 
+import { useDataStore } from "@/store/dataStore";
+import { ClientData, TaskData, WorkerData } from "@/types";
 import React from "react";
 import {
   FaUserFriends,
@@ -10,29 +12,52 @@ import {
 import * as XLSX from "xlsx";
 
 export default function HomePage() {
+  const { errors, setClients, setWorkers, setTasks, setErrors } =
+    useDataStore();
+
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       console.log("File selected:", file.name, file.size, file.type);
 
+      const fileName = event.target.id.split("-file")[0];
+
       const reader = new FileReader();
 
       reader.onload = (e) => {
-        const workbook = XLSX.read(e.target?.result as ArrayBuffer, {
-          type: "array",
-        }); // returns a workbook obj
+        try {
+          const workbook = XLSX.read(e.target?.result as ArrayBuffer, {
+            type: "array",
+          });
 
-        const sheetName = workbook.SheetNames[0];
+          const sheetName = workbook.SheetNames[0];
 
-        const worksheet = workbook.Sheets[sheetName];
+          const worksheet = workbook.Sheets[sheetName];
 
-        const json = XLSX.utils.sheet_to_json(worksheet);
+          const json = XLSX.utils.sheet_to_json(worksheet);
 
-        console.log(json);
+          switch (fileName) {
+            case "clients":
+              setClients(json as ClientData[]);
+              break;
+            case "workers":
+              setWorkers(json as WorkerData[]);
+              break;
+            case "tasks":
+              setTasks(json as TaskData[]);
+              break;
+            default:
+              console.error("Invalid file name");
+          }
+        } catch (error: any) {
+          console.error("Error while converting data to json", error?.message);
+          setErrors(error?.message);
+        }
       };
 
       reader.onerror = (e) => {
-        console.error("FileReader error:", reader.error);
+        console.error("FileReader error:", reader.error?.message);
+        setErrors(reader.error?.message as string);
       };
 
       reader.readAsArrayBuffer(file);
@@ -107,6 +132,32 @@ export default function HomePage() {
           </div>
         </section>
       </div>
+      {errors && (
+        <div className="mt-8 flex justify-center">
+          <div
+            className="flex items-center gap-3 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg shadow-md max-w-xl w-full animate-fade-in"
+            role="alert"
+          >
+            <svg
+              className="w-6 h-6 text-red-500 flex-shrink-0"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 8v4m0 4h.01M21 12A9 9 0 1 1 3 12a9 9 0 0 1 18 0Z"
+              />
+            </svg>
+            <div>
+              <span className="font-bold">Error:</span> {errors}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
