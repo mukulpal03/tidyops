@@ -1,5 +1,6 @@
 "use client";
 
+import DataTable from "@/components/DataTable";
 import { useDataStore } from "@/store/dataStore";
 import { ClientData, TaskData, WorkerData } from "@/types";
 import React from "react";
