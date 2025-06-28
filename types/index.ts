@@ -1,12 +1,20 @@
 export interface DataStore {
-  clients: ClientData[] | [];
-  workers: WorkerData[] | [];
-  tasks: TaskData[] | null;
-  errors: string | null;
+  clients: ClientData[];
+  workers: WorkerData[];
+  tasks: TaskData[];
+  errors: string[];
+  cellErrors: CellError[];
+
   setClients: (data: ClientData[]) => void;
   setWorkers: (data: WorkerData[]) => void;
   setTasks: (data: TaskData[]) => void;
-  setErrors: (data: string) => void;
+
+  setErrors: (newErrors: string[]) => void;
+  addError: (errorMsg: string) => void;
+  clearErrors: () => void;
+
+  setCellErrors: (newCellErrors: CellError[]) => void;
+  clearCellErrors: () => void;
 }
 
 export interface ClientData {
@@ -36,4 +44,17 @@ export interface TaskData {
   RequiredSkills: string;
   PreferredPhases: string;
   MaxConcurrent: number;
+}
+
+export interface CellError {
+  entityType: "clients" | "workers" | "tasks";
+  rowIndex: number;
+  columnId: string;
+  message: string;
+}
+
+export interface ValidationResult {
+  cellErrors: CellError[];
+  globalErrors: string[];
+  isValid: boolean;
 }

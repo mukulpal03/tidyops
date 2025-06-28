@@ -57,13 +57,13 @@ export default function HomePage() {
           router.push("/data");
         } catch (error: any) {
           console.error("Error while converting data to json", error?.message);
-          setErrors(error?.message);
+          setErrors([error?.message]);
         }
       };
 
       reader.onerror = (e) => {
         console.error("FileReader error:", reader.error?.message);
-        setErrors(reader.error?.message as string);
+        setErrors([reader.error?.message || "Unknown file read error"]);
       };
 
       reader.readAsArrayBuffer(file);
@@ -138,7 +138,7 @@ export default function HomePage() {
           </div>
         </section>
       </div>
-      {errors && (
+      {errors.length > 0 && (
         <div className="mt-8 flex justify-center">
           <div
             className="flex items-center gap-3 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg shadow-md max-w-xl w-full animate-fade-in"
