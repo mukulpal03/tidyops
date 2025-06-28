@@ -3,6 +3,7 @@
 import DataTable from "@/components/DataTable";
 import { useDataStore } from "@/store/dataStore";
 import { ClientData, TaskData, WorkerData } from "@/types";
+import { useRouter } from "next/navigation";
 import React from "react";
 import {
   FaUserFriends,
@@ -15,6 +16,8 @@ import * as XLSX from "xlsx";
 export default function HomePage() {
   const { errors, setClients, setWorkers, setTasks, setErrors } =
     useDataStore();
+
+  const router = useRouter();
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -50,6 +53,8 @@ export default function HomePage() {
             default:
               console.error("Invalid file name");
           }
+
+          router.push("/data");
         } catch (error: any) {
           console.error("Error while converting data to json", error?.message);
           setErrors(error?.message);
