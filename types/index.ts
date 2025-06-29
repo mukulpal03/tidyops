@@ -9,6 +9,10 @@ export interface DataStore {
   setWorkers: (data: WorkerData[]) => void;
   setTasks: (data: TaskData[]) => void;
 
+  clearClients: () => void;
+  clearWorkers: () => void;
+  clearTasks: () => void;
+
   setErrors: (newErrors: string[]) => void;
   addError: (errorMsg: string) => void;
   clearErrors: () => void;

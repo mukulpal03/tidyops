@@ -18,6 +18,10 @@ export const useDataStore = create<DataStore>((set) => ({
   setWorkers: (data: WorkerData[]) => set({ workers: data }),
   setTasks: (data: TaskData[]) => set({ tasks: data }),
 
+  clearClients: () => set({ clients: [] }),
+  clearWorkers: () => set({ workers: [] }),
+  clearTasks: () => set({ tasks: [] }),
+
   setErrors: (newErrors: string[]) => set({ errors: newErrors }),
   addError: (errorMsg: string) =>
     set((state) => ({ errors: [...state.errors, errorMsg] })),

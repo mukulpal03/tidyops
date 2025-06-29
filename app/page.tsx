@@ -4,7 +4,7 @@ import DataTable from "@/components/DataTable";
 import { useDataStore } from "@/store/dataStore";
 import { ClientData, TaskData, WorkerData } from "@/types";
 import { useRouter } from "next/navigation";
-import React from "react";
+import React, { useState } from "react";
 import {
   FaUserFriends,
   FaUserTie,
@@ -12,35 +12,63 @@ import {
   FaCloudUploadAlt,
 } from "react-icons/fa";
 import * as XLSX from "xlsx";
+import { validateAllData, validateEntityData } from "./utils/validation";
 
 export default function HomePage() {
-  const { errors, setClients, setWorkers, setTasks, setErrors } =
-    useDataStore();
+  const clients = useDataStore((state) => state.clients);
+  const workers = useDataStore((state) => state.workers);
+  const tasks = useDataStore((state) => state.tasks);
+
+  const setClients = useDataStore((state) => state.setClients);
+  const setWorkers = useDataStore((state) => state.setWorkers);
+  const setTasks = useDataStore((state) => state.setTasks);
+
+  const clearClients = useDataStore((state) => state.clearClients);
+  const clearWorkers = useDataStore((state) => state.clearWorkers);
+  const clearTasks = useDataStore((state) => state.clearTasks);
+
+  const setErrors = useDataStore((state) => state.setErrors);
+  const setCellErrors = useDataStore((state) => state.setCellErrors);
+  const clearErrors = useDataStore((state) => state.clearErrors);
+  const clearCellErrors = useDataStore((state) => state.clearCellErrors);
 
   const router = useRouter();
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const [parsingErrors, setParsingErrors] = useState<string[]>([]);
+
+  const globalValidationErrors = useDataStore((state) => state.errors);
+
+  const handleFileUpload = (
+    event: React.ChangeEvent<HTMLInputElement>,
+    dataType: "clients" | "workers" | "tasks"
+  ) => {
+    setParsingErrors([]);
+    clearErrors();
+    clearCellErrors();
+
     const file = event.target.files?.[0];
-    if (file) {
-      console.log("File selected:", file.name, file.size, file.type);
+    if (!file) {
+      router.push("/data");
+      return;
+    }
 
-      const fileName = event.target.id.split("-file")[0];
+    const reader = new FileReader();
 
-      const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = e.target?.result as ArrayBuffer;
+        const workbook = XLSX.read(data, { type: "array" });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const json = XLSX.utils.sheet_to_json(worksheet);
 
-      reader.onload = (e) => {
-        try {
-          const workbook = XLSX.read(e.target?.result as ArrayBuffer, {
-            type: "array",
-          });
+        // Run validation with the uploaded data first
+        const validationResult = validateEntityData(json, dataType);
 
-          const sheetName = workbook.SheetNames[0];
-
-          const worksheet = workbook.Sheets[sheetName];
-
-          const json = XLSX.utils.sheet_to_json(worksheet);
-
-          switch (fileName) {
+        // Only store the data if validation passes
+        if (validationResult.isValid) {
+          // Update only the appropriate dataset
+          switch (dataType) {
             case "clients":
               setClients(json as ClientData[]);
               break;
@@ -50,26 +78,68 @@ export default function HomePage() {
             case "tasks":
               setTasks(json as TaskData[]);
               break;
-            default:
-              console.error("Invalid file name");
           }
-
-          router.push("/data");
-        } catch (error: any) {
-          console.error("Error while converting data to json", error?.message);
-          setErrors([error?.message]);
+        } else {
+          // Clear the specific dataset if validation fails
+          switch (dataType) {
+            case "clients":
+              clearClients();
+              break;
+            case "workers":
+              clearWorkers();
+              break;
+            case "tasks":
+              clearTasks();
+              break;
+          }
         }
-      };
 
-      reader.onerror = (e) => {
-        console.error("FileReader error:", reader.error?.message);
-        setErrors([reader.error?.message || "Unknown file read error"]);
-      };
+        // Set errors regardless of validation result
+        setErrors(validationResult.globalErrors);
+        setCellErrors(validationResult.cellErrors);
 
-      reader.readAsArrayBuffer(file);
-    } else {
-      console.log("No file selected.");
-    }
+        // Navigate to data page regardless of validation result
+        router.push("/data");
+      } catch (error: any) {
+        const errorMessage = error?.message || "Unknown parsing error";
+        setParsingErrors((prev) => [
+          ...prev,
+          `Error processing ${dataType} file: ${errorMessage}`,
+        ]);
+
+        setErrors([`Error processing ${dataType} file: ${errorMessage}`]);
+
+        // Clear only the specific dataset that failed
+        switch (dataType) {
+          case "clients":
+            clearClients();
+            break;
+          case "workers":
+            clearWorkers();
+            break;
+          case "tasks":
+            clearTasks();
+            break;
+        }
+        setCellErrors([]);
+        console.error(`Error processing ${dataType} file:`, error);
+        router.push("/data");
+      }
+    };
+
+    reader.onerror = (e) => {
+      const errorMessage = reader.error?.message || "Unknown file read error";
+      setParsingErrors((prev) => [
+        ...prev,
+        `File read error for ${dataType} file: ${errorMessage}`,
+      ]);
+      setErrors([`File read error for ${dataType} file: ${errorMessage}`]);
+      setCellErrors([]);
+      console.error(`FileReader error for ${dataType} file:`, reader.error);
+      router.push("/data");
+    };
+
+    reader.readAsArrayBuffer(file);
   };
 
   return (
@@ -97,7 +167,7 @@ export default function HomePage() {
               type="file"
               id="clients-file"
               accept=".csv, .xlsx"
-              onChange={handleFileChange}
+              onChange={(e) => handleFileUpload(e, "clients")}
               className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-100 file:text-violet-700 hover:file:bg-violet-200 cursor-pointer"
             />
             <span className="text-xs text-gray-400 mt-2">CSV or XLSX</span>
@@ -114,7 +184,7 @@ export default function HomePage() {
               type="file"
               id="workers-file"
               accept=".csv, .xlsx"
-              onChange={handleFileChange}
+              onChange={(e) => handleFileUpload(e, "workers")}
               className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-100 file:text-violet-700 hover:file:bg-violet-200 cursor-pointer"
             />
             <span className="text-xs text-gray-400 mt-2">CSV or XLSX</span>
@@ -131,39 +201,13 @@ export default function HomePage() {
               type="file"
               id="tasks-file"
               accept=".csv, .xlsx"
-              onChange={handleFileChange}
+              onChange={(e) => handleFileUpload(e, "tasks")}
               className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-100 file:text-violet-700 hover:file:bg-violet-200 cursor-pointer"
             />
             <span className="text-xs text-gray-400 mt-2">CSV or XLSX</span>
           </div>
         </section>
       </div>
-      {errors.length > 0 && (
-        <div className="mt-8 flex justify-center">
-          <div
-            className="flex items-center gap-3 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg shadow-md max-w-xl w-full animate-fade-in"
-            role="alert"
-          >
-            <svg
-              className="w-6 h-6 text-red-500 flex-shrink-0"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M12 8v4m0 4h.01M21 12A9 9 0 1 1 3 12a9 9 0 0 1 18 0Z"
-              />
-            </svg>
-            <div>
-              <span className="font-bold">Error:</span> {errors}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
