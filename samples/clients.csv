@@ -1,0 +1,9 @@
+ClientID,ClientName,PriorityLevel,RequestedTaskIDs,GroupTag,AttributesJSON
+C001,Acme Corporation,5,"T1,T2,T3",VIP,"{""industry"": ""technology"", ""contract_value"": 500000}"
+C002,Global Industries,3,"T2,T4",Standard,"{""industry"": ""manufacturing"", ""contract_value"": 250000}"
+C003,StartupXYZ,4,"T1,T5",VIP,"{""industry"": ""fintech"", ""contract_value"": 300000}"
+C004,Local Business,2,"T3",Standard,"{""industry"": ""retail"", ""contract_value"": 75000}"
+C005,Enterprise Corp,5,"T1,T2,T3,T4,T5",Enterprise,"{""industry"": ""consulting"", ""contract_value"": 1000000}"
+C006,Small Shop,1,"T4",Standard,"{""industry"": ""services"", ""contract_value"": 25000}"
+C007,Innovation Labs,4,"T2,T5",VIP,"{""industry"": ""research"", ""contract_value"": 400000}"
+C008,Regional Chain,3,"T1,T3",Standard,"{""industry"": ""retail"", ""contract_value"": 150000}" 

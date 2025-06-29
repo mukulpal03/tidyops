@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -15,6 +15,8 @@ interface DataTableProps<T extends RowData> {
   columns: ColumnDef<T, any>[];
   cellErrors?: CellError[];
   entityType?: "clients" | "workers" | "tasks";
+  editable?: boolean;
+  onCellUpdate?: (rowIndex: number, columnId: string, value: any) => void;
 }
 
 export default function DataTable<T extends RowData>({
@@ -22,7 +24,15 @@ export default function DataTable<T extends RowData>({
   columns,
   cellErrors = [],
   entityType,
+  editable = false,
+  onCellUpdate,
 }: DataTableProps<T>) {
+  const [editingCell, setEditingCell] = useState<{
+    rowIndex: number;
+    columnId: string;
+    value: string;
+  } | null>(null);
+
   const table = useReactTable<T>({
     data,
     columns,
@@ -36,6 +46,43 @@ export default function DataTable<T extends RowData>({
     return cellErrors.find(
       (error) => error.rowIndex === rowIndex && error.columnId === columnId
     );
+  };
+
+  const handleCellClick = (
+    rowIndex: number,
+    columnId: string,
+    currentValue: any
+  ) => {
+    if (editable && onCellUpdate) {
+      setEditingCell({
+        rowIndex,
+        columnId,
+        value: String(currentValue || ""),
+      });
+    }
+  };
+
+  const handleCellSave = () => {
+    if (editingCell && onCellUpdate) {
+      onCellUpdate(
+        editingCell.rowIndex,
+        editingCell.columnId,
+        editingCell.value
+      );
+      setEditingCell(null);
+    }
+  };
+
+  const handleCellCancel = () => {
+    setEditingCell(null);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleCellSave();
+    } else if (e.key === "Escape") {
+      handleCellCancel();
+    }
   };
 
   return (
@@ -78,6 +125,10 @@ export default function DataTable<T extends RowData>({
               >
                 {row.getVisibleCells().map((cell) => {
                   const cellError = getCellError(row.index, cell.column.id);
+                  const isEditing =
+                    editingCell?.rowIndex === row.index &&
+                    editingCell?.columnId === cell.column.id;
+                  const currentValue = cell.getValue();
 
                   return (
                     <td
@@ -86,21 +137,47 @@ export default function DataTable<T extends RowData>({
                         cellError
                           ? "bg-red-100 border border-red-300"
                           : "text-gray-900"
+                      } ${
+                        editable && onCellUpdate
+                          ? "cursor-pointer hover:bg-gray-50"
+                          : ""
                       }`}
+                      onClick={() =>
+                        handleCellClick(row.index, cell.column.id, currentValue)
+                      }
                     >
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                      {cellError && (
-                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full flex items-center justify-center">
-                          <span className="text-white text-xs">!</span>
-                        </div>
-                      )}
-                      {cellError && (
-                        <div className="absolute z-10 top-full left-0 mt-1 px-2 py-1 bg-red-600 text-white text-xs rounded shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
-                          {cellError.message}
-                        </div>
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          value={editingCell.value}
+                          onChange={(e) =>
+                            setEditingCell({
+                              ...editingCell,
+                              value: e.target.value,
+                            })
+                          }
+                          onKeyDown={handleKeyDown}
+                          onBlur={handleCellSave}
+                          className="w-full p-1 border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          autoFocus
+                        />
+                      ) : (
+                        <>
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )}
+                          {cellError && (
+                            <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full flex items-center justify-center">
+                              <span className="text-white text-xs">!</span>
+                            </div>
+                          )}
+                          {cellError && (
+                            <div className="absolute z-10 top-full left-0 mt-1 px-2 py-1 bg-red-600 text-white text-xs rounded shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                              {cellError.message}
+                            </div>
+                          )}
+                        </>
                       )}
                     </td>
                   );

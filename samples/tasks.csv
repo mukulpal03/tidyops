@@ -1,0 +1,9 @@
+TaskID,TaskName,Category,Duration,RequiredSkills,PreferredPhases,MaxConcurrent
+T1,Frontend Development,Development,2,"programming,design","[1,2,3]",3
+T2,Backend API,Development,3,"programming,analysis","[1,2,3,4]",2
+T3,UI/UX Design,Design,1,"design","[2,3,4]",4
+T4,Testing & QA,Testing,2,"testing,analysis","[3,4,5]",3
+T5,System Integration,Integration,2,"programming,testing,analysis","[4,5]",2
+T6,Database Setup,Infrastructure,1,"programming,analysis","[1,2]",1
+T7,Performance Testing,Testing,1,"testing,analysis","[4,5]",2
+T8,Documentation,Documentation,1,"analysis","[5]",3 
